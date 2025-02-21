@@ -6,16 +6,16 @@ set -e  # Dừng script nếu có lỗi
 read -p "Nhập tên hiển thị cho kết nối Shadowsocks: " CLIENT_NAME
 CLIENT_NAME=$(echo "$CLIENT_NAME" | sed 's/ /_/g')  # Thay khoảng trắng bằng "_"
 
-# Cấu hình thông tin server
-SERVER_PORT=8388
+# Random port trong khoảng an toàn
+SERVER_PORT=$((RANDOM % (65535 - 1024) + 1024))
 PASSWORD=$(openssl rand -base64 16)
 METHOD="chacha20-ietf-poly1305"
 
+# Cài đặt Shadowsocks nếu chưa có
 echo "⚡ Cài đặt môi trường..."
 sudo apt update -y
 sudo apt install -y shadowsocks-libev qrencode curl
 
-# Nếu Shadowsocks chưa có, cài từ PPA
 if ! command -v ss-server &> /dev/null; then
     echo "⚡ Cài đặt Shadowsocks từ PPA..."
     sudo add-apt-repository ppa:max-c-lv/shadowsocks-libev -y
@@ -27,7 +27,7 @@ fi
 sudo mkdir -p /etc/shadowsocks-libev
 
 # Ghi file cấu hình Shadowsocks
-echo "⚡ Cấu hình Shadowsocks đơn giản..."
+echo "⚡ Cấu hình Shadowsocks..."
 cat <<EOF | sudo tee /etc/shadowsocks-libev/config.json
 {
     "server": "0.0.0.0",
@@ -49,9 +49,11 @@ echo "⚡ Khởi động Shadowsocks..."
 sudo systemctl restart shadowsocks-libev
 sudo systemctl enable shadowsocks-libev
 
-# Xuất URL ss:// (thêm tên khách hàng)
-ENCODED_INFO=$(echo -n "$METHOD:$PASSWORD@$(curl -s ifconfig.me):$SERVER_PORT" | base64 -w 0)
-SS_URL="ss://$ENCODED_INFO#$CLIENT_NAME"
+# Lấy địa chỉ IP bên ngoài
+SERVER_IP=$(curl -s ifconfig.me)
+
+# Xuất URL ss:// theo format không mã hóa method:password
+SS_URL="ss://$METHOD:$PASSWORD@$SERVER_IP:$SERVER_PORT#$CLIENT_NAME"
 echo "✅ Shadowsocks đã cài đặt!"
 echo "🔗 Link kết nối: $SS_URL"
 
