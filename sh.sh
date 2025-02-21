@@ -39,11 +39,6 @@ cat <<EOF | sudo tee /etc/shadowsocks-libev/config.json
 }
 EOF
 
-# Mở firewall
-echo "⚡ Cấu hình firewall..."
-sudo ufw allow $SERVER_PORT/tcp
-sudo ufw allow $SERVER_PORT/udp
-
 # Restart dịch vụ
 echo "⚡ Khởi động Shadowsocks..."
 sudo systemctl restart shadowsocks-libev
